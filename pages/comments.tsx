@@ -1,36 +1,36 @@
-import { QueryResult } from 'neo4j-driver'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { createSession } from '../internals/database'
-import { PostRepository } from '../repository/PostRepository'
 import styles from '../styles/Home.module.css'
 
 type Props = {
-    post_id: Number
+  post_id: string | number
 }
 
 const Comments: React.FC<Props> = ({post_id}) => {
   const router = useRouter()
 
-  const [comments, setComments] = useState<QueryResult>()
+  const [comments, setComments] = useState<{ text: string; username: string }[]>([])
 
-  function getComments() {
-    const postRepo = new PostRepository(createSession())
-    
-    postRepo.getComments(post_id).then(result => { 
-      console.log(result)
-      setComments(result) 
-    }).catch(err => {
-        console.log(err)
-    })
+  async function getComments() {
+    try {
+      const response = await fetch(`/api/comments?postId=${encodeURIComponent(String(post_id))}`)
+      if (!response.ok) {
+        throw new Error('Failed to load comments')
+      }
+
+      const data = await response.json()
+      setComments(Array.isArray(data.comments) ? data.comments : [])
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   useEffect(() => {
 
     getComments()
 
-  }, [0])
+  }, [post_id])
 
   return (
     <div className={styles.container}>
@@ -42,11 +42,11 @@ const Comments: React.FC<Props> = ({post_id}) => {
 
         <div style={{paddingLeft: 50}}>Comments</div>
         {
-          comments?.records?.map((comment, idx) => (
+          comments.map((comment, idx) => (
             <div key={idx} style={{paddingLeft: 50}}>
               <hr></hr>
-              <p><a href={`${router.basePath}/profile/${comment.get('username')}`}>@{comment.get('username')}</a></p>
-              <p>{comment.get('text')}</p>
+              <p><a href={`${router.basePath}/profile/${comment.username}`}>@{comment.username}</a></p>
+              <p>{comment.text}</p>
               <hr></hr>
             </div>
             

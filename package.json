@@ -11,15 +11,21 @@
   "dependencies": {
     "moment": "^2.29.1",
     "neo4j-driver": "^4.4.3",
-    "next": "12.1.0",
-    "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "next": "^16.2.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-force-graph": "^1.48.2"
   },
   "devDependencies": {
-    "@types/node": "17.0.21",
-    "@types/react": "17.0.39",
-    "eslint": "8.10.0",
-    "eslint-config-next": "12.1.0",
-    "typescript": "4.5.5"
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "20.11.30",
+    "@types/react": "18.2.64",
+    "@types/react-dom": "18.2.21",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.2.3",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^4.2.2",
+    "typescript": "5.4.5"
   }
 }

@@ -25,7 +25,7 @@ class UserRepository {
     sosialFollowButton(from: string | null | undefined, to: string | string[] | undefined): Result {
         return this.session.run('MATCH (me:User {username: $from}),(other:User {username: $to}) CALL { WITH me, other MATCH (other)-[:FOLLOW]->(me) RETURN count(other) AS followme } CALL { WITH me, other MATCH (me)-[:FOLLOW]->(other) RETURN count(me) AS followother } RETURN followme, followother', 
         {
-            from: localStorage.getItem('logedinas'),
+            from: from,
             to: to
         }
     )
@@ -59,21 +59,21 @@ class UserRepository {
 
     }
 
-    getProfileFollower(username: string | string[] | undefined): Result {
+    getProfileFollower(username: string | string[] | undefined, viewer: string | null | undefined): Result {
         return this.session.run('MATCH (prof:User { username: $profile_username})<-[:FOLLOW]-(follower) CALL { WITH prof, follower MATCH (me:User { username: $user})-[:FOLLOW]->(follower) RETURN count(follower) AS following } RETURN follower.username AS follower_username, following', 
             {
                 profile_username: username,
-                user: localStorage.getItem('logedinas')
+                user: viewer
             }
         )
 
     }
 
-    getProfileFollowing(username: string | string[] | undefined): Result {
+    getProfileFollowing(username: string | string[] | undefined, viewer: string | null | undefined): Result {
         return this.session.run('MATCH (prof:User {username: $profile_username})-[:FOLLOW]->(following) CALL { WITH prof, following MATCH (me:User { username: $user})-[:FOLLOW]->(following) RETURN count(following) AS user_following } RETURN following.username AS following_username, user_following', 
             {
                 profile_username: username,
-                user: localStorage.getItem('logedinas')
+                user: viewer
             }
         )
 

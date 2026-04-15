@@ -12,7 +12,7 @@ class PostRepository {
         return this.session.run('MATCH (u:User)-[r:POSTING]->(p:Post) RETURN p.text AS text, u.username AS username, p.id AS id')
     }
 
-    getComments(post_id: Number): Result {
+    getComments(post_id: string | number): Result {
         return this.session.run('MATCH ({id: $post_id})<-[r:COMMENT_TO]-(c:Comment)<-[r2:CREATE_COMMENT]-(u:User) RETURN c.text AS text, u.username AS username', 
             {
                 post_id: post_id
