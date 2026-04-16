@@ -1,106 +1,206 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useState } from 'react'
 
 import { useUserContext } from '../components/UserContext'
 
+type AuthMode = 'login' | 'register'
+
 const LoginPage: NextPage = () => {
   const router = useRouter()
-  const { users, setCurrentUser, createUser } = useUserContext()
-  const [selectedUsername, setSelectedUsername] = useState('')
-  const [newUsername, setNewUsername] = useState('')
+  const { loginUser, registerUser } = useUserContext()
+
+  const [mode, setMode] = useState<AuthMode>('login')
+  const [loginUsername, setLoginUsername] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [registerUsername, setRegisterUsername] = useState('')
+  const [registerPassword, setRegisterPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  const hasUsers = useMemo(() => users.length > 0, [users])
-
-  async function handleExistingLogin(event: FormEvent<HTMLFormElement>) {
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!selectedUsername) {
+    const username = loginUsername.trim().toLowerCase()
+    const password = loginPassword
+
+    if (!username || !password) {
+      setErrorMessage('Enter username and password.')
       return
     }
 
-    setCurrentUser(selectedUsername)
-    await router.push('/')
+    setErrorMessage('')
+    setSubmitting(true)
+
+    try {
+      await loginUser(username, password)
+      await router.push('/')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to login')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  async function handleCreateAndLogin(event: FormEvent<HTMLFormElement>) {
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const username = newUsername.trim().toLowerCase()
-    if (!username) {
+    const username = registerUsername.trim().toLowerCase()
+    const password = registerPassword
+
+    if (!username || !password) {
+      setErrorMessage('Enter username and password.')
       return
     }
 
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.')
+      return
+    }
+
+    setErrorMessage('')
     setSubmitting(true)
+
     try {
-      await createUser(username)
+      await registerUser(username, password)
       await router.push('/')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to register')
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center px-4">
+    <div className="mx-auto flex min-h-[88vh] max-w-5xl items-center justify-center px-4 py-8">
       <Head>
-        <title>Login | InstaMini</title>
+        <title>Sign In | MiniSocial</title>
       </Head>
 
-      <section className="grid w-full gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2">
-        <div className="rounded-2xl bg-gradient-to-br from-fuchsia-500 via-rose-500 to-orange-400 p-6 text-white">
-          <h1 className="text-3xl font-semibold">InstaMini</h1>
-          <p className="mt-3 text-sm text-white/90">
-            Mock login screen for a realistic college mini-project experience.
-          </p>
-          <p className="mt-6 text-xs uppercase tracking-[0.16em] text-white/80">Neo4j + Next.js + Tailwind</p>
+      <section className="grid w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.12)] md:grid-cols-[1.15fr_1fr]">
+        <div className="relative overflow-hidden bg-gradient-to-br from-cyan-600 via-sky-600 to-blue-700 p-8 text-white">
+          <div className="absolute -top-24 -left-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" aria-hidden />
+          <div className="absolute -bottom-20 right-0 h-56 w-56 rounded-full bg-cyan-300/25 blur-3xl" aria-hidden />
+          <div className="relative space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100">MiniSocial</p>
+            <h1 className="text-4xl font-semibold leading-tight">Connect with friends and communities.</h1>
+            <p className="max-w-sm text-sm text-cyan-100/95">
+              Sign in to continue your conversations, discover profiles, and grow your network with secure account access.
+            </p>
+            <div className="mt-6 rounded-2xl bg-white/14 p-4 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-[0.14em] text-cyan-100">Security</p>
+              <p className="mt-2 text-sm text-white/95">Account access is protected with password-based authentication.</p>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Login</h2>
-            <p className="text-sm text-slate-500">Pick an existing user or create a new one.</p>
+        <div className="space-y-5 p-7 md:p-8">
+          <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-semibold">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login')
+                setErrorMessage('')
+              }}
+              className={`rounded-lg px-3 py-2 transition ${mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('register')
+                setErrorMessage('')
+              }}
+              className={`rounded-lg px-3 py-2 transition ${mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >
+              Register
+            </button>
           </div>
 
-          <form onSubmit={(event) => handleExistingLogin(event).catch((error) => console.error(error))} className="space-y-3">
-            <label className="text-sm font-medium text-slate-700">Existing user</label>
-            <select
-              value={selectedUsername}
-              onChange={(event) => setSelectedUsername(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-              disabled={!hasUsers}
-            >
-              <option value="">Select user</option>
-              {users.map((user) => (
-                <option key={user.username} value={user.username}>
-                  {user.username}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={!selectedUsername}
-              className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Continue as selected user
-            </button>
-          </form>
+          {mode === 'login' ? (
+            <form onSubmit={(event) => handleLogin(event).catch((error) => console.error(error))} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Username</label>
+                <input
+                  value={loginUsername}
+                  onChange={(event) => setLoginUsername(event.target.value)}
+                  placeholder="your_username"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+                />
+              </div>
 
-          <form onSubmit={(event) => handleCreateAndLogin(event).catch((error) => console.error(error))} className="space-y-3 border-t border-slate-200 pt-4">
-            <label className="text-sm font-medium text-slate-700">Create new user</label>
-            <input
-              value={newUsername}
-              onChange={(event) => setNewUsername(event.target.value)}
-              placeholder="e.g. harsh"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-            />
-            <button
-              type="submit"
-              disabled={submitting || !newUsername.trim()}
-              className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {submitting ? 'Creating...' : 'Create and login'}
-            </button>
-          </form>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(event) => setLoginPassword(event.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+                />
+              </div>
+
+              {errorMessage ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">{errorMessage}</p> : null}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+              >
+                {submitting ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={(event) => handleRegister(event).catch((error) => console.error(error))} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Username</label>
+                <input
+                  value={registerUsername}
+                  onChange={(event) => setRegisterUsername(event.target.value)}
+                  placeholder="choose_a_username"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+                <input
+                  type="password"
+                  value={registerPassword}
+                  onChange={(event) => setRegisterPassword(event.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Confirm password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="Re-enter password"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-sky-500"
+                />
+              </div>
+
+              {errorMessage ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">{errorMessage}</p> : null}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
+              >
+                {submitting ? 'Creating account...' : 'Create Account'}
+              </button>
+            </form>
+          )}
         </div>
       </section>
     </div>

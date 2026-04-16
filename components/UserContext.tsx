@@ -11,6 +11,8 @@ type UserContextValue = {
   logout: () => void
   refreshUsers: () => Promise<void>
   createUser: (username: string) => Promise<void>
+  loginUser: (username: string, password: string) => Promise<void>
+  registerUser: (username: string, password: string) => Promise<void>
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined)

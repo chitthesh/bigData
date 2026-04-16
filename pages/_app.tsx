@@ -8,6 +8,8 @@ import { Layout } from '../components/Layout'
 import { UserContext, UserSummary } from '../components/UserContext'
 
 const INTRO_STORAGE_KEY = 'intro-seen-v2'
+const AUTH_STORAGE_KEY = 'auth-user'
+const LEGACY_AUTH_STORAGE_KEY = 'logedinas'
 
 const INTRO_PROFILES = {
   fast: {
@@ -64,7 +66,56 @@ function MyApp({ Component, pageProps }: AppProps) {
 
       await refreshUsers()
       setCurrentUserState(username)
-      localStorage.setItem('logedinas', username)
+      localStorage.setItem(AUTH_STORAGE_KEY, username)
+      localStorage.setItem(LEGACY_AUTH_STORAGE_KEY, username)
+    },
+    [refreshUsers]
+  )
+
+  const loginUser = useCallback(
+    async (username: string, password: string) => {
+      const cleanedUsername = username.trim().toLowerCase()
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: cleanedUsername, password })
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to login')
+      }
+
+      setCurrentUserState(cleanedUsername)
+      localStorage.setItem(AUTH_STORAGE_KEY, cleanedUsername)
+      localStorage.setItem(LEGACY_AUTH_STORAGE_KEY, cleanedUsername)
+      await refreshUsers()
+    },
+    [refreshUsers]
+  )
+
+  const registerUser = useCallback(
+    async (username: string, password: string) => {
+      const cleanedUsername = username.trim().toLowerCase()
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: cleanedUsername, password })
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to register')
+      }
+
+      setCurrentUserState(cleanedUsername)
+      localStorage.setItem(AUTH_STORAGE_KEY, cleanedUsername)
+      localStorage.setItem(LEGACY_AUTH_STORAGE_KEY, cleanedUsername)
+      await refreshUsers()
     },
     [refreshUsers]
   )
@@ -75,13 +126,15 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
 
     setCurrentUserState(username)
-    localStorage.setItem('logedinas', username)
+    localStorage.setItem(AUTH_STORAGE_KEY, username)
+    localStorage.setItem(LEGACY_AUTH_STORAGE_KEY, username)
   }, [])
 
   const logout = useCallback(() => {
     setCurrentUserState(null)
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('logedinas')
+      localStorage.removeItem(AUTH_STORAGE_KEY)
+      localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
     }
   }, [])
 
@@ -173,9 +226,10 @@ function MyApp({ Component, pageProps }: AppProps) {
       return
     }
 
-    const stored = localStorage.getItem('logedinas')
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(LEGACY_AUTH_STORAGE_KEY)
     if (stored) {
       setCurrentUserState(stored)
+      localStorage.setItem(AUTH_STORAGE_KEY, stored)
     }
 
     refreshUsers()
@@ -208,9 +262,11 @@ function MyApp({ Component, pageProps }: AppProps) {
       setCurrentUser,
       logout,
       refreshUsers,
-      createUser
+      createUser,
+      loginUser,
+      registerUser
     }),
-    [currentUser, users, setCurrentUser, logout, refreshUsers, createUser]
+    [currentUser, users, setCurrentUser, logout, refreshUsers, createUser, loginUser, registerUser]
   )
 
   const showLayout = router.pathname !== '/login'

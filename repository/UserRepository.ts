@@ -13,6 +13,37 @@ class UserRepository {
         return this.session.run('MATCH (f:User) RETURN f.username AS user')
     }
 
+    findUserByUsername(username: string): Result {
+        return this.session.run(
+            'MATCH (u:User {username: $username}) RETURN u.username AS username, u.passwordHash AS passwordHash, u.passwordSalt AS passwordSalt LIMIT 1',
+            { username: username }
+        )
+    }
+
+    addUserWithPassword(username: string, passwordHash: string, passwordSalt: string): Result {
+        return this.session.run(
+            'CREATE (u:User {username:$username, user_id:$id, passwordHash:$passwordHash, passwordSalt:$passwordSalt, createdAt:$createdAt}) RETURN u.username AS username',
+            {
+                username: username,
+                id: moment.now(),
+                passwordHash: passwordHash,
+                passwordSalt: passwordSalt,
+                createdAt: moment.now()
+            }
+        )
+    }
+
+    setUserPassword(username: string, passwordHash: string, passwordSalt: string): Result {
+        return this.session.run(
+            'MATCH (u:User {username: $username}) SET u.passwordHash = $passwordHash, u.passwordSalt = $passwordSalt RETURN u.username AS username',
+            {
+                username: username,
+                passwordHash: passwordHash,
+                passwordSalt: passwordSalt
+            }
+        )
+    }
+
     addUser(username: string | null | undefined): Result {
         return this.session.run('CREATE (a:User {username:$username, user_id:$id})', 
             {
