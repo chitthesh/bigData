@@ -15,8 +15,15 @@ class UserRepository {
 
     findUserByUsername(username: string): Result {
         return this.session.run(
-            'MATCH (u:User {username: $username}) RETURN u.username AS username, u.passwordHash AS passwordHash, u.passwordSalt AS passwordSalt LIMIT 1',
+            'MATCH (u:User {username: $username}) RETURN u.username AS username, u.passwordHash AS passwordHash, u.passwordSalt AS passwordSalt, u.googleEmail AS googleEmail LIMIT 1',
             { username: username }
+        )
+    }
+
+    findUserByGoogleEmail(googleEmail: string): Result {
+        return this.session.run(
+            'MATCH (u:User {googleEmail: $googleEmail}) RETURN u.username AS username LIMIT 1',
+            { googleEmail: googleEmail }
         )
     }
 
@@ -40,6 +47,20 @@ class UserRepository {
                 username: username,
                 passwordHash: passwordHash,
                 passwordSalt: passwordSalt
+            }
+        )
+    }
+
+    addGoogleUser(username: string, googleEmail: string, passwordHash: string, passwordSalt: string): Result {
+        return this.session.run(
+            'CREATE (u:User {username:$username, user_id:$id, googleEmail:$googleEmail, authProvider:"google", passwordHash:$passwordHash, passwordSalt:$passwordSalt, createdAt:$createdAt}) RETURN u.username AS username',
+            {
+                username: username,
+                googleEmail: googleEmail,
+                id: moment.now(),
+                passwordHash: passwordHash,
+                passwordSalt: passwordSalt,
+                createdAt: moment.now()
             }
         )
     }

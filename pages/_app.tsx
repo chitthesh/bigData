@@ -120,6 +120,37 @@ function MyApp({ Component, pageProps }: AppProps) {
     [refreshUsers]
   )
 
+  const continueWithGoogle = useCallback(
+    async (email: string) => {
+      const cleanedEmail = email.trim().toLowerCase()
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: cleanedEmail })
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to continue with Google')
+      }
+
+      const payload = await response.json()
+      const username = String(payload.username ?? '').trim().toLowerCase()
+
+      if (!username) {
+        throw new Error('Failed to resolve account username')
+      }
+
+      setCurrentUserState(username)
+      localStorage.setItem(AUTH_STORAGE_KEY, username)
+      localStorage.setItem(LEGACY_AUTH_STORAGE_KEY, username)
+      await refreshUsers()
+    },
+    [refreshUsers]
+  )
+
   const setCurrentUser = useCallback((username: string) => {
     if (!username) {
       return
@@ -264,9 +295,10 @@ function MyApp({ Component, pageProps }: AppProps) {
       refreshUsers,
       createUser,
       loginUser,
-      registerUser
+      registerUser,
+      continueWithGoogle
     }),
-    [currentUser, users, setCurrentUser, logout, refreshUsers, createUser, loginUser, registerUser]
+    [currentUser, users, setCurrentUser, logout, refreshUsers, createUser, loginUser, registerUser, continueWithGoogle]
   )
 
   const showLayout = router.pathname !== '/login'
