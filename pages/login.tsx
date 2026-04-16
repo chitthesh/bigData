@@ -77,29 +77,13 @@ const LoginPage: NextPage = () => {
   }
 
   return (
-    <div className="mx-auto flex min-h-[88vh] max-w-5xl items-center justify-center px-4 py-8">
+    <div className="mx-auto flex min-h-[88vh] max-w-xl items-center justify-center px-4 py-8">
       <Head>
         <title>Sign In | MiniSocial</title>
       </Head>
 
-      <section className="grid w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.12)] md:grid-cols-[1.15fr_1fr]">
-        <div className="relative overflow-hidden bg-gradient-to-br from-cyan-600 via-sky-600 to-blue-700 p-8 text-white">
-          <div className="absolute -top-24 -left-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" aria-hidden />
-          <div className="absolute -bottom-20 right-0 h-56 w-56 rounded-full bg-cyan-300/25 blur-3xl" aria-hidden />
-          <div className="relative space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100">MiniSocial</p>
-            <h1 className="text-4xl font-semibold leading-tight">Connect with friends and communities.</h1>
-            <p className="max-w-sm text-sm text-cyan-100/95">
-              Sign in to continue your conversations, discover profiles, and grow your network with secure account access.
-            </p>
-            <div className="mt-6 rounded-2xl bg-white/14 p-4 backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-cyan-100">Security</p>
-              <p className="mt-2 text-sm text-white/95">Account access is protected with password-based authentication.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-5 p-7 md:p-8">
+      <section className="w-full rounded-3xl border border-slate-200 bg-white p-7 shadow-[0_24px_70px_rgba(15,23,42,0.12)] md:p-8">
+        <div className="space-y-5">
           <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-semibold">
             <button
               type="button"
