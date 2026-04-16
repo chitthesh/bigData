@@ -66,25 +66,40 @@ class InstagramRepository {
     )
   }
 
-  createPost(author: string, id: string, caption: string, imageUrl: string, createdAt: number): Result {
+  createPost(
+    author: string,
+    id: string,
+    caption: string,
+    imageUrl: string,
+    visibility: 'followers' | 'public',
+    createdAt: number
+  ): Result {
     return this.session.run(
       `MATCH (u:User {username: $author})
-       CREATE (p:Post {id: $id, caption: $caption, imageUrl: $imageUrl, createdAt: $createdAt})
+       CREATE (p:Post {id: $id, caption: $caption, imageUrl: $imageUrl, visibility: $visibility, createdAt: $createdAt})
        CREATE (u)-[:POSTED]->(p)
        RETURN p.id AS id`,
-      { author, id, caption, imageUrl, createdAt }
+      { author, id, caption, imageUrl, visibility, createdAt }
     )
   }
 
   getUserPosts(username: string, viewer?: string, limit = 30, skip = 0): Result {
     return this.session.run(
       `MATCH (u:User {username: $username})-[:POSTED]->(post:Post)
+       OPTIONAL MATCH (viewer:User {username: $viewer})
+       WITH u, post, viewer,
+            CASE
+              WHEN post.visibility IS NULL OR post.visibility = '' THEN 'followers'
+              ELSE post.visibility
+            END AS visibility
+       WHERE viewer IS NOT NULL
+         AND (viewer = u OR visibility = 'public' OR EXISTS((viewer)-[:FOLLOWS]->(u)))
        OPTIONAL MATCH (liker:User)-[:LIKED]->(post)
        OPTIONAL MATCH (:User)-[comment:COMMENTED]->(post)
-       OPTIONAL MATCH (viewer:User {username: $viewer})
        RETURN post.id AS id,
               post.caption AS caption,
               post.imageUrl AS imageUrl,
+              visibility AS visibility,
               post.createdAt AS createdAt,
               u.username AS author,
               count(DISTINCT liker) AS likes,
@@ -104,12 +119,18 @@ class InstagramRepository {
     return this.session.run(
       `MATCH (viewer:User {username: $username})
        MATCH (author:User)-[:POSTED]->(post:Post)
-       WHERE author = viewer OR EXISTS((viewer)-[:FOLLOWS]->(author))
+       WITH viewer, author, post,
+            CASE
+              WHEN post.visibility IS NULL OR post.visibility = '' THEN 'followers'
+              ELSE post.visibility
+            END AS visibility
+       WHERE author = viewer OR visibility = 'public' OR EXISTS((viewer)-[:FOLLOWS]->(author))
        OPTIONAL MATCH (liker:User)-[:LIKED]->(post)
        OPTIONAL MATCH (:User)-[comment:COMMENTED]->(post)
        RETURN post.id AS id,
               post.caption AS caption,
               post.imageUrl AS imageUrl,
+              visibility AS visibility,
               post.createdAt AS createdAt,
               author.username AS author,
               count(DISTINCT liker) AS likes,
@@ -163,6 +184,25 @@ class InstagramRepository {
        RETURN author.username AS username
        LIMIT 1`,
       { postId }
+    )
+  }
+
+  canViewerAccessPost(postId: string, viewer?: string): Result {
+    return this.session.run(
+      `MATCH (author:User)-[:POSTED]->(post:Post {id: $postId})
+       OPTIONAL MATCH (viewerNode:User {username: $viewer})
+       WITH author, viewerNode,
+            CASE
+              WHEN post.visibility IS NULL OR post.visibility = '' THEN 'followers'
+              ELSE post.visibility
+            END AS visibility
+       RETURN CASE
+                WHEN viewerNode IS NULL THEN false
+                WHEN viewerNode = author THEN true
+                WHEN visibility = 'public' THEN true
+                ELSE EXISTS((viewerNode)-[:FOLLOWS]->(author))
+              END AS allowed`,
+      { postId, viewer: viewer ?? null }
     )
   }
 
@@ -223,6 +263,27 @@ class InstagramRepository {
               message.createdAt AS createdAt
        ORDER BY createdAt ASC`,
       { userA, userB }
+    )
+  }
+
+  getChatThreads(username: string, search = '', limit = 25): Result {
+    return this.session.run(
+      `MATCH (me:User {username: $username})
+       MATCH (sender:User)-[:SENT]->(message:Message)-[:TO]->(recipient:User)
+       WHERE sender = me OR recipient = me
+       WITH me, sender, message,
+            CASE WHEN sender = me THEN recipient.username ELSE sender.username END AS otherUser
+       WITH me, sender, otherUser, message
+       ORDER BY message.createdAt DESC
+       WITH me, otherUser, collect({ body: message.body, createdAt: message.createdAt, sender: sender.username })[0] AS lastMessage
+       WHERE $search = '' OR toLower(otherUser) CONTAINS toLower($search)
+       RETURN otherUser AS username,
+              lastMessage.body AS body,
+              lastMessage.createdAt AS createdAt,
+              lastMessage.sender = me.username AS sentByMe
+       ORDER BY createdAt DESC
+       LIMIT toInteger($limit)`,
+      { username, search, limit }
     )
   }
 

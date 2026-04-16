@@ -3,14 +3,36 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { PageTransition } from '../components/PageTransition'
 import { Layout } from '../components/Layout'
 import { UserContext, UserSummary } from '../components/UserContext'
+
+const INTRO_STORAGE_KEY = 'intro-seen-v2'
+
+const INTRO_PROFILES = {
+  fast: {
+    minDurationMs: 900,
+    settleDurationMs: 180
+  },
+  cinematic: {
+    minDurationMs: 1700,
+    settleDurationMs: 420
+  }
+} as const
+
+type IntroProfile = keyof typeof INTRO_PROFILES
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter()
   const [users, setUsers] = useState<UserSummary[]>([])
   const [currentUser, setCurrentUserState] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
+  const [introActive, setIntroActive] = useState(false)
+  const [introProgress, setIntroProgress] = useState(0)
+  const [introMessage, setIntroMessage] = useState('Starting secure session...')
+  const [introProfile, setIntroProfile] = useState<IntroProfile>('cinematic')
+  const [usersReady, setUsersReady] = useState(false)
+  const [introStartedAt, setIntroStartedAt] = useState<number | null>(null)
 
   const refreshUsers = useCallback(async () => {
     const response = await fetch('/api/users')
@@ -68,13 +90,100 @@ function MyApp({ Component, pageProps }: AppProps) {
       return
     }
 
+    const hasSeenIntro = window.sessionStorage.getItem(INTRO_STORAGE_KEY) === '1'
+    if (hasSeenIntro) {
+      return
+    }
+
+    setIntroProfile('cinematic')
+    setIntroActive(true)
+    setIntroProgress(12)
+    setIntroMessage('Starting secure session...')
+    setIntroStartedAt(Date.now())
+    window.sessionStorage.setItem(INTRO_STORAGE_KEY, '1')
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const currentUrl = new URL(window.location.href)
+    const searchParams = currentUrl.searchParams
+    const forceIntro = searchParams.get('intro') === '1'
+    if (!forceIntro) {
+      return
+    }
+
+    const profileQuery = searchParams.get('introStyle')
+    const selectedProfile: IntroProfile = profileQuery === 'fast' ? 'fast' : 'cinematic'
+
+    setIntroProfile(selectedProfile)
+    setIntroActive(true)
+    setIntroProgress(12)
+    setIntroMessage('Starting secure session...')
+    setIntroStartedAt(Date.now())
+
+    currentUrl.searchParams.delete('intro')
+    currentUrl.searchParams.delete('introStyle')
+    const cleanedSearch = currentUrl.searchParams.toString()
+    const cleanedUrl = `${currentUrl.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${currentUrl.hash}`
+    window.history.replaceState({}, '', cleanedUrl)
+  }, [router.asPath])
+
+  useEffect(() => {
+    if (!introActive) {
+      return
+    }
+
+    if (!usersReady) {
+      setIntroProgress((prev) => Math.max(prev, 46))
+      setIntroMessage('Connecting to graph service...')
+      return
+    }
+
+    setIntroProgress((prev) => Math.max(prev, 84))
+    setIntroMessage('Loading recommendations and feed...')
+
+    const profileConfig = INTRO_PROFILES[introProfile]
+    const startedAt = introStartedAt ?? Date.now()
+    const elapsed = Date.now() - startedAt
+    const waitMs = Math.max(profileConfig.minDurationMs - elapsed, 0)
+    let settleId: number | undefined
+
+    const completeId = window.setTimeout(() => {
+      setIntroProgress(100)
+      setIntroMessage('Ready')
+
+      settleId = window.setTimeout(() => {
+        setIntroActive(false)
+      }, profileConfig.settleDurationMs)
+    }, waitMs)
+
+    return () => {
+      window.clearTimeout(completeId)
+      if (typeof settleId === 'number') {
+        window.clearTimeout(settleId)
+      }
+    }
+  }, [introActive, usersReady, introStartedAt, introProfile])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
     const stored = localStorage.getItem('logedinas')
     if (stored) {
       setCurrentUserState(stored)
     }
 
-    refreshUsers().catch((err) => console.error(err))
-    setHydrated(true)
+    refreshUsers()
+      .catch((err) => console.error(err))
+      .finally(() => {
+        setUsersReady(true)
+        setHydrated(true)
+      })
   }, [refreshUsers])
 
   useEffect(() => {
@@ -110,10 +219,14 @@ function MyApp({ Component, pageProps }: AppProps) {
     <UserContext.Provider value={contextValue}>
       {showLayout ? (
         <Layout>
-          <Component {...pageProps} />
+          <PageTransition introActive={introActive} introProgress={introProgress} introMessage={introMessage}>
+            <Component {...pageProps} />
+          </PageTransition>
         </Layout>
       ) : (
-        <Component {...pageProps} />
+        <PageTransition introActive={introActive} introProgress={introProgress} introMessage={introMessage}>
+          <Component {...pageProps} />
+        </PageTransition>
       )}
     </UserContext.Provider>
   )

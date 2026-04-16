@@ -105,7 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `UNWIND $posts AS item
        MATCH (u:User {username: item[1]})
        MERGE (p:Post {id: item[0]})
-       SET p.caption = item[2], p.imageUrl = item[3], p.createdAt = item[4]
+       SET p.caption = item[2], p.imageUrl = item[3], p.visibility = 'followers', p.createdAt = item[4]
        MERGE (u)-[:POSTED]->(p)
        RETURN count(*) AS postsCreated`,
       { posts: POSTS }

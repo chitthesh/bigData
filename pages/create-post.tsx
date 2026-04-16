@@ -10,6 +10,7 @@ const CreatePostPage: NextPage = () => {
   const [caption, setCaption] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [localImageDataUrl, setLocalImageDataUrl] = useState('')
+  const [visibility, setVisibility] = useState<'followers' | 'public'>('followers')
   const [submitting, setSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -50,7 +51,8 @@ const CreatePostPage: NextPage = () => {
       body: JSON.stringify({
         author: currentUser,
         caption: caption.trim(),
-        imageUrl: imageToSave
+        imageUrl: imageToSave,
+        visibility
       })
     })
 
@@ -63,7 +65,12 @@ const CreatePostPage: NextPage = () => {
     setCaption('')
     setImageUrl('')
     setLocalImageDataUrl('')
-    setSuccessMessage('Post created. It is now visible on the feed.')
+    setVisibility('followers')
+    setSuccessMessage(
+      visibility === 'followers'
+        ? 'Post created. Only followers can view it.'
+        : 'Post created. It is visible to everyone.'
+    )
   }
 
   return (
@@ -125,6 +132,19 @@ const CreatePostPage: NextPage = () => {
               </div>
             </div>
           ) : null}
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-slate-700">Audience</label>
+            <select
+              value={visibility}
+              onChange={(event) => setVisibility(event.target.value === 'public' ? 'public' : 'followers')}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+            >
+              <option value="followers">Followers only</option>
+              <option value="public">Public</option>
+            </select>
+            <p className="text-xs text-slate-500">Followers-only posts are visible only to people who follow you.</p>
+          </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-slate-700">Caption</label>

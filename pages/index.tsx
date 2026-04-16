@@ -81,11 +81,8 @@ const Home: NextPage = () => {
         <meta name="description" content="Instagram-style social feed powered by Neo4j." />
       </Head>
 
-      <section className="rounded-3xl bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300 p-6 text-white shadow-lg">
+      <section className="rounded-3xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 p-6 text-white shadow-lg">
         <h1 className="text-3xl font-semibold">Home Feed</h1>
-        <p className="mt-2 max-w-2xl text-sm text-white/90">
-          View the latest posts from people you follow. Like, comment, and explore profiles.
-        </p>
         <div className="mt-4">
           <Link href="/create-post" className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900">
             Create new post

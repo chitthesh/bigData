@@ -256,7 +256,12 @@ const ProfilePage: NextPage = () => {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Posts</h2>
         {loading ? <EmptyState title="Loading posts" message="Fetching user posts from Neo4j." /> : null}
-        {!loading && !posts.length ? <EmptyState title="No posts yet" message="This user has not posted yet." /> : null}
+        {!loading && !posts.length ? (
+          <EmptyState
+            title="No visible posts yet"
+            message="This user has no posts, or their posts are followers-only and you are not following them."
+          />
+        ) : null}
         {!!posts.length ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {posts.map((post) => (
@@ -265,6 +270,9 @@ const ProfilePage: NextPage = () => {
                 <div className="space-y-2 px-3 py-2">
                   <p className="line-clamp-2 text-xs text-slate-700">{post.caption || 'No caption'}</p>
                   <div className="flex flex-wrap gap-1">
+                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                      {post.visibility === 'public' ? 'Public' : 'Followers only'}
+                    </span>
                     <span className="rounded-full bg-fuchsia-50 px-2 py-0.5 text-[11px] font-semibold text-fuchsia-700">{post.likes} likes</span>
                     <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-700">{post.comments} comments</span>
                   </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
+import { SearchBar } from './SearchBar'
 import { useUserContext } from './UserContext'
 
 type InstagramNavbarProps = {
@@ -28,6 +29,10 @@ function InstagramNavbar({ onCreateUser, creating }: InstagramNavbarProps) {
           </span>
           <span className="text-lg font-bold tracking-tight">MiniSocial</span>
         </Link>
+
+        <div className="hidden lg:block">
+          <SearchBar onSearch={(username) => router.push(`/profile/${encodeURIComponent(username)}`).catch((error) => console.error(error))} />
+        </div>
 
         <nav className="ml-2 hidden items-center gap-2 md:flex">
           {navItems.map((item) => {
@@ -76,6 +81,7 @@ function InstagramNavbar({ onCreateUser, creating }: InstagramNavbarProps) {
       </div>
 
       <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-3 md:hidden">
+        <SearchBar onSearch={(username) => router.push(`/profile/${encodeURIComponent(username)}`).catch((error) => console.error(error))} />
         {navItems.map((item) => {
           const active = item.href === '/' ? router.pathname === '/' : router.pathname === item.href
           return (

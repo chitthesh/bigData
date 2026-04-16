@@ -31,6 +31,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const repo = new InstagramRepository(session)
 
   try {
+    const accessResult = await repo.canViewerAccessPost(postId, username)
+    const allowed = Boolean(accessResult.records[0]?.get('allowed') ?? false)
+    if (!allowed) {
+      res.status(403).json({ error: 'You do not have access to this post' })
+      return
+    }
+
     if (action === 'unlike') {
       await repo.unlikePost(username, postId)
       res.status(200).json({ ok: true })

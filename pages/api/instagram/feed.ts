@@ -32,6 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       author: String(record.get('author')),
       caption: String(record.get('caption') ?? ''),
       imageUrl: String(record.get('imageUrl') ?? ''),
+      visibility: record.get('visibility') === 'public' ? 'public' : 'followers',
       createdAt: Number(record.get('createdAt') ?? 0),
       likes: Number(record.get('likes') ?? 0),
       comments: Number(record.get('comments') ?? 0),

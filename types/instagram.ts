@@ -3,6 +3,7 @@ export type FeedPost = {
   author: string
   caption: string
   imageUrl: string
+  visibility: 'followers' | 'public'
   createdAt: number
   likes: number
   comments: number
@@ -36,4 +37,11 @@ export type ChatMessage = {
   recipient: string
   body: string
   createdAt: number
+}
+
+export type ChatThread = {
+  username: string
+  body: string
+  createdAt: number
+  sentByMe: boolean
 }

@@ -41,6 +41,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return
       }
 
+      const accessResult = await repo.canViewerAccessPost(postId, viewer)
+      const allowed = Boolean(accessResult.records[0]?.get('allowed') ?? false)
+      if (!allowed) {
+        res.status(403).json({ error: 'You do not have access to this post' })
+        return
+      }
+
       const result = await repo.getComments(postId, limit + 1, skip)
       const rows = result.records.map((record) => {
         const id = String(record.get('id') ?? '')
@@ -71,6 +78,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return
       }
 
+      const accessResult = await repo.canViewerAccessPost(postId, username)
+      const allowed = Boolean(accessResult.records[0]?.get('allowed') ?? false)
+      if (!allowed) {
+        res.status(403).json({ error: 'You do not have access to this post' })
+        return
+      }
+
       await repo.addComment(username, postId, makeCommentId(), text, Date.now())
 
       const authorResult = await repo.getPostAuthor(postId)
@@ -93,6 +107,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (!username || !postId) {
         res.status(400).json({ error: 'username and postId are required' })
+        return
+      }
+
+      const accessResult = await repo.canViewerAccessPost(postId, username)
+      const allowed = Boolean(accessResult.records[0]?.get('allowed') ?? false)
+      if (!allowed) {
+        res.status(403).json({ error: 'You do not have access to this post' })
         return
       }
 

@@ -16,6 +16,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (req.method === 'GET') {
+      const username = Array.isArray(req.query.username) ? req.query.username[0] : req.query.username
+      const mode = Array.isArray(req.query.mode) ? req.query.mode[0] : req.query.mode
+      const search = Array.isArray(req.query.search) ? req.query.search[0] : req.query.search
+      const limit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit
+
+      if (mode === 'threads') {
+        if (!username) {
+          res.status(400).json({ error: 'username is required for thread list' })
+          return
+        }
+
+        const maxThreads = Number(limit ?? 30)
+        const result = await repo.getChatThreads(username, search?.trim() ?? '', Number.isFinite(maxThreads) ? maxThreads : 30)
+        const threads = result.records.map((record) => ({
+          username: String(record.get('username')),
+          body: String(record.get('body') ?? ''),
+          createdAt: Number(record.get('createdAt') ?? 0),
+          sentByMe: Boolean(record.get('sentByMe') ?? false)
+        }))
+
+        res.status(200).json({ threads })
+        return
+      }
+
       const userA = Array.isArray(req.query.userA) ? req.query.userA[0] : req.query.userA
       const userB = Array.isArray(req.query.userB) ? req.query.userB[0] : req.query.userB
 
