@@ -43,15 +43,10 @@ const NotificationsPage: NextPage = () => {
   }, [currentUser])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Head>
         <title>Notifications</title>
       </Head>
-
-      <section className="rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 p-6 text-white shadow-lg">
-        <h1 className="text-3xl font-semibold">Notifications</h1>
-        <p className="mt-2 text-sm text-white/90">New followers, likes, comments, and messages in one timeline.</p>
-      </section>
 
       {!currentUser ? (
         <EmptyState title="Select a user" message="Choose an active user to view their notification feed." />

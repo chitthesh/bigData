@@ -85,16 +85,18 @@ class UserRepository {
     }
 
     follow(from: string | null | undefined, to: string | string[] | undefined): Result {
-        return this.session.run('MATCH (a:User {username: $from}),(b:User {username: $to}) WITH a, b CREATE (a)-[r:FOLLOW]->(b)', 
+        return this.session.run(
+            'MATCH (a:User {username: $from}),(b:User {username: $to}) MERGE (a)-[:FOLLOW]->(b) WITH a, b, EXISTS((b)-[:FOLLOW]->(a)) AS isMutual FOREACH (_ IN CASE WHEN isMutual THEN [1] ELSE [] END | MERGE (a)-[:MUTUAL]-(b)) RETURN a.username AS from, b.username AS to',
             {
-            from: from,
-            to: to
+                from: from,
+                to: to
             }
         )
     }
 
     unfollow(from: string | null | undefined, to: string | string[] | undefined): Result {
-        return this.session.run('MATCH ({username: $from})-[r:FOLLOW]->({username: $to}) DELETE r', 
+        return this.session.run(
+            'MATCH (a:User {username: $from})-[r:FOLLOW]->(b:User {username: $to}) DELETE r WITH a, b OPTIONAL MATCH (a)-[m:MUTUAL]-(b) DELETE m',
             {
                 from: from,
                 to: to

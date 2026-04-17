@@ -9,7 +9,7 @@ type AuthMode = 'login' | 'register'
 
 const LoginPage: NextPage = () => {
   const router = useRouter()
-  const { loginUser, registerUser, continueWithGoogle } = useUserContext()
+  const { loginUser, registerUser } = useUserContext()
 
   const [mode, setMode] = useState<AuthMode>('login')
   const [loginUsername, setLoginUsername] = useState('')
@@ -76,32 +76,6 @@ const LoginPage: NextPage = () => {
     }
   }
 
-  async function handleGoogleContinue() {
-    const email = typeof window !== 'undefined' ? window.prompt('Enter your Google email') : null
-    const cleanedEmail = (email ?? '').trim().toLowerCase()
-
-    if (!cleanedEmail) {
-      return
-    }
-
-    if (!cleanedEmail.includes('@')) {
-      setErrorMessage('Enter a valid Google email address.')
-      return
-    }
-
-    setErrorMessage('')
-    setSubmitting(true)
-
-    try {
-      await continueWithGoogle(cleanedEmail)
-      await router.push('/')
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to continue with Google')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_20%,#dbeafe_0%,#eff6ff_26%,#f8fafc_54%,#e2e8f0_100%)] px-4 py-10">
       <div className="pointer-events-none absolute -left-20 top-16 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl" aria-hidden />
@@ -124,52 +98,6 @@ const LoginPage: NextPage = () => {
                 ? 'Log in to continue chatting, sharing, and exploring your network.'
                 : 'Join the community and start building your social graph.'}
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-semibold">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('login')
-                setErrorMessage('')
-              }}
-              className={`rounded-lg px-3 py-2 transition ${mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('register')
-                setErrorMessage('')
-              }}
-              className={`rounded-lg px-3 py-2 transition ${mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-            >
-              Register
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleGoogleContinue().catch((error) => console.error(error))}
-              disabled={submitting}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              {submitting ? 'Please wait...' : 'Continue with Google'}
-            </button>
-            <button
-              type="button"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Continue with Apple
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            or with username
-            <span className="h-px flex-1 bg-slate-200" />
           </div>
 
           {mode === 'login' ? (
@@ -290,6 +218,7 @@ const LoginPage: NextPage = () => {
           )}
         </div>
       </section>
+
       </div>
     </div>
   )

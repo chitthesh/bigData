@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
+    "dev:turbo": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,6 +13,7 @@
     "moment": "^2.29.1",
     "neo4j-driver": "^4.4.3",
     "next": "^16.2.3",
+    "next-auth": "^4.24.14",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-force-graph": "^1.48.2"

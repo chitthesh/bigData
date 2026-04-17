@@ -75,20 +75,11 @@ const Home: NextPage = () => {
   }, [hasMore, loading, page, currentUser])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Head>
         <title>Home Feed</title>
         <meta name="description" content="Instagram-style social feed powered by Neo4j." />
       </Head>
-
-      <section className="rounded-3xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 p-6 text-white shadow-lg">
-        <h1 className="text-3xl font-semibold">Home Feed</h1>
-        <div className="mt-4">
-          <Link href="/create-post" className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900">
-            Create new post
-          </Link>
-        </div>
-      </section>
 
       {!currentUser ? (
         <EmptyState
@@ -97,6 +88,12 @@ const Home: NextPage = () => {
         />
       ) : (
         <>
+          <div className="flex justify-end">
+            <Link href="/create-post" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+              Create new post
+            </Link>
+          </div>
+
           <StoriesStrip />
 
           <section className="mx-auto max-w-2xl space-y-5">

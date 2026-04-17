@@ -1,6 +1,8 @@
 import '../styles/globals.css'
 import type { AppProps } from 'next/app'
+import type { Session } from 'next-auth'
 import { useRouter } from 'next/router'
+import { signOut, useSession, SessionProvider } from 'next-auth/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { PageTransition } from '../components/PageTransition'
@@ -24,8 +26,14 @@ const INTRO_PROFILES = {
 
 type IntroProfile = keyof typeof INTRO_PROFILES
 
-function MyApp({ Component, pageProps }: AppProps) {
+type AppShellProps = {
+  Component: AppProps['Component']
+  pageProps: AppProps['pageProps']
+}
+
+function AppShell({ Component, pageProps }: AppShellProps) {
   const router = useRouter()
+  const session = useSession()
   const [users, setUsers] = useState<UserSummary[]>([])
   const [currentUser, setCurrentUserState] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
@@ -120,37 +128,6 @@ function MyApp({ Component, pageProps }: AppProps) {
     [refreshUsers]
   )
 
-  const continueWithGoogle = useCallback(
-    async (email: string) => {
-      const cleanedEmail = email.trim().toLowerCase()
-      const response = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email: cleanedEmail })
-      })
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.error || 'Failed to continue with Google')
-      }
-
-      const payload = await response.json()
-      const username = String(payload.username ?? '').trim().toLowerCase()
-
-      if (!username) {
-        throw new Error('Failed to resolve account username')
-      }
-
-      setCurrentUserState(username)
-      localStorage.setItem(AUTH_STORAGE_KEY, username)
-      localStorage.setItem(LEGACY_AUTH_STORAGE_KEY, username)
-      await refreshUsers()
-    },
-    [refreshUsers]
-  )
-
   const setCurrentUser = useCallback((username: string) => {
     if (!username) {
       return
@@ -167,6 +144,8 @@ function MyApp({ Component, pageProps }: AppProps) {
       localStorage.removeItem(AUTH_STORAGE_KEY)
       localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
     }
+
+    signOut({ redirect: false }).catch((error) => console.error(error))
   }, [])
 
   useEffect(() => {
@@ -272,7 +251,26 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, [refreshUsers])
 
   useEffect(() => {
-    if (!hydrated) {
+    if (session.status !== 'authenticated') {
+      return
+    }
+
+    const sessionUsername = String(session.data?.user?.name ?? '').trim().toLowerCase()
+    if (!sessionUsername) {
+      return
+    }
+
+    setCurrentUserState(sessionUsername)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(AUTH_STORAGE_KEY, sessionUsername)
+      localStorage.setItem(LEGACY_AUTH_STORAGE_KEY, sessionUsername)
+    }
+
+    refreshUsers().catch((error) => console.error(error))
+  }, [session.status, session.data?.user?.name, refreshUsers])
+
+  useEffect(() => {
+    if (!hydrated || session.status === 'loading') {
       return
     }
 
@@ -284,7 +282,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     if (currentUser && router.pathname === '/login') {
       router.replace('/').catch((error) => console.error(error))
     }
-  }, [currentUser, hydrated, router])
+  }, [currentUser, hydrated, router, session.status])
 
   const contextValue = useMemo(
     () => ({
@@ -295,10 +293,9 @@ function MyApp({ Component, pageProps }: AppProps) {
       refreshUsers,
       createUser,
       loginUser,
-      registerUser,
-      continueWithGoogle
+      registerUser
     }),
-    [currentUser, users, setCurrentUser, logout, refreshUsers, createUser, loginUser, registerUser, continueWithGoogle]
+    [currentUser, users, setCurrentUser, logout, refreshUsers, createUser, loginUser, registerUser]
   )
 
   const showLayout = router.pathname !== '/login'
@@ -317,6 +314,14 @@ function MyApp({ Component, pageProps }: AppProps) {
         </PageTransition>
       )}
     </UserContext.Provider>
+  )
+}
+
+function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <SessionProvider session={(pageProps as { session?: Session | null }).session}>
+      <AppShell Component={Component} pageProps={pageProps} />
+    </SessionProvider>
   )
 }
 

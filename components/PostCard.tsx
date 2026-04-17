@@ -302,6 +302,14 @@ function PostCard({ post, onRefresh }: PostCardProps) {
           </div>
         ) : null}
 
+        {post.location ? (
+          <p className="text-xs font-medium text-slate-500">Location: {post.location}</p>
+        ) : null}
+
+        {post.altText ? (
+          <p className="text-xs text-slate-400">Alt text: {post.altText}</p>
+        ) : null}
+
         <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-2">
           {loadingComments ? <p className="text-xs text-slate-400">Loading comments...</p> : null}
           {comments.map((comment, index) => (

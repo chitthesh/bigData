@@ -55,6 +55,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         responsePayload.users = followingResult.records.map((item) => ({ username: String(item.get('username')) }))
       }
 
+      if (list === 'mutual' && viewer && viewer !== username) {
+        const mutualResult = await repo.getMutualFollowing(username, viewer, limit)
+        responsePayload.users = mutualResult.records.map((item) => ({ username: String(item.get('username')) }))
+      }
+
       res.status(200).json(responsePayload)
       return
     }

@@ -8,6 +8,8 @@ type CreatePostBody = {
   author?: string
   caption?: string
   imageUrl?: string
+  location?: string
+  altText?: string
   visibility?: 'followers' | 'public'
 }
 
@@ -52,6 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         author: String(record.get('author')),
         caption: String(record.get('caption') ?? ''),
         imageUrl: String(record.get('imageUrl') ?? ''),
+        location: String(record.get('location') ?? ''),
+        altText: String(record.get('altText') ?? ''),
         visibility: record.get('visibility') === 'public' ? 'public' : 'followers',
         createdAt: Number(record.get('createdAt') ?? 0),
         likes: Number(record.get('likes') ?? 0),
@@ -70,6 +74,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const author = body.author?.trim() ?? ''
       const caption = body.caption?.trim() ?? ''
       const imageUrl = body.imageUrl?.trim() ?? ''
+      const location = body.location?.trim() ?? ''
+      const altText = body.altText?.trim() ?? ''
       const visibility = body.visibility === 'public' ? 'public' : 'followers'
 
       if (!author || !imageUrl) {
@@ -79,7 +85,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const id = makePostId()
       const createdAt = Date.now()
-      await repo.createPost(author, id, caption, imageUrl, visibility, createdAt)
+      await repo.createPost(author, id, caption, imageUrl, location, altText, visibility, createdAt)
 
       res.status(200).json({ ok: true, id, createdAt })
       return

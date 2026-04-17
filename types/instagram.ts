@@ -3,6 +3,8 @@ export type FeedPost = {
   author: string
   caption: string
   imageUrl: string
+  location?: string
+  altText?: string
   visibility: 'followers' | 'public'
   createdAt: number
   likes: number

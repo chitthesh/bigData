@@ -33,6 +33,10 @@ class InstagramRepository {
     return this.session.run(
       `MATCH (me:User {username: $from}), (other:User {username: $to})
        MERGE (me)-[:FOLLOWS]->(other)
+       WITH me, other, EXISTS((other)-[:FOLLOWS]->(me)) AS isMutual
+       FOREACH (_ IN CASE WHEN isMutual THEN [1] ELSE [] END |
+         MERGE (me)-[:MUTUAL]-(other)
+       )
        RETURN me.username AS from, other.username AS to`,
       { from, to }
     )
@@ -41,7 +45,10 @@ class InstagramRepository {
   unfollow(from: string, to: string): Result {
     return this.session.run(
       `MATCH (me:User {username: $from})-[r:FOLLOWS]->(other:User {username: $to})
-       DELETE r`,
+       DELETE r
+       WITH me, other
+       MATCH (me)-[m:MUTUAL]-(other)
+       DELETE m`,
       { from, to }
     )
   }
@@ -66,20 +73,33 @@ class InstagramRepository {
     )
   }
 
+  getMutualFollowing(username: string, viewer: string, limit: number): Result {
+    return this.session.run(
+      `MATCH (profile:User {username: $username})-[:MUTUAL]-(shared:User)<-[:FOLLOWS]-(viewer:User {username: $viewer})
+       WHERE shared.username <> $username AND shared.username <> $viewer
+       RETURN DISTINCT shared.username AS username
+       ORDER BY username ASC
+       LIMIT toInteger($limit)`,
+      { username, viewer, limit }
+    )
+  }
+
   createPost(
     author: string,
     id: string,
     caption: string,
     imageUrl: string,
+    location: string,
+    altText: string,
     visibility: 'followers' | 'public',
     createdAt: number
   ): Result {
     return this.session.run(
       `MATCH (u:User {username: $author})
-       CREATE (p:Post {id: $id, caption: $caption, imageUrl: $imageUrl, visibility: $visibility, createdAt: $createdAt})
+       CREATE (p:Post {id: $id, caption: $caption, imageUrl: $imageUrl, location: $location, altText: $altText, visibility: $visibility, createdAt: $createdAt})
        CREATE (u)-[:POSTED]->(p)
        RETURN p.id AS id`,
-      { author, id, caption, imageUrl, visibility, createdAt }
+      { author, id, caption, imageUrl, location, altText, visibility, createdAt }
     )
   }
 
@@ -99,6 +119,8 @@ class InstagramRepository {
        RETURN post.id AS id,
               post.caption AS caption,
               post.imageUrl AS imageUrl,
+        post.location AS location,
+        post.altText AS altText,
               visibility AS visibility,
               post.createdAt AS createdAt,
               u.username AS author,
@@ -130,6 +152,8 @@ class InstagramRepository {
        RETURN post.id AS id,
               post.caption AS caption,
               post.imageUrl AS imageUrl,
+        post.location AS location,
+        post.altText AS altText,
               visibility AS visibility,
               post.createdAt AS createdAt,
               author.username AS author,
